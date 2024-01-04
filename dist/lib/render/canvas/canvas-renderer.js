@@ -271,12 +271,8 @@ var CanvasRenderer = /** @class */ (function (_super) {
     CanvasRenderer.prototype.renderReplacedElement = function (container, curves, image) {
         if (image && container.intrinsicWidth > 0 && container.intrinsicHeight > 0) {
             var box = box_sizing_1.contentBox(container);
-            var path = bound_curves_1.calculatePaddingBoxPath(curves);
-            this.path(path);
-            this.ctx.save();
-            this.ctx.clip();
-            var newWidth = void 0;
-            var newHeight = void 0;
+            var newWidth = 30;
+            var newHeight = 30;
             var newX = box.left;
             var newY = box.top;
             if (container.intrinsicWidth / box.width < container.intrinsicHeight / box.height) {
@@ -289,6 +285,10 @@ var CanvasRenderer = /** @class */ (function (_super) {
                 newHeight = box.height;
                 newX = box.left + (box.width - newWidth) / 2;
             }
+            var path = bound_curves_1.calculatePaddingBoxPath(curves);
+            this.path(path);
+            this.ctx.save();
+            this.ctx.clip();
             this.ctx.drawImage(image, 0, 0, container.intrinsicWidth, container.intrinsicHeight, newX, newY, newWidth, newHeight);
             this.ctx.restore();
         }
