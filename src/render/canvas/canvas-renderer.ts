@@ -276,23 +276,17 @@ export class CanvasRenderer extends Renderer {
             this.path(path);
             this.ctx.save();
             this.ctx.clip();
-            
-            let newWidth;
-            let newHeight;
-            let newX = box.left;
-            let newY = box.top;
-
-            if (container.intrinsicWidth / box.width < container.intrinsicHeight / box.height) {
-                newWidth = box.width;
-                newHeight = container.intrinsicHeight * (box.width / container.intrinsicWidth);
-                newY = box.top + (box.height - newHeight) / 2;
-            } else {
-                newWidth = container.intrinsicWidth * (box.height / container.intrinsicHeight);
-                newHeight = box.height;
-                newX = box.left + (box.width - newWidth) / 2;
-            }
-
-            this.ctx.drawImage(image, 0, 0, container.intrinsicWidth, container.intrinsicHeight, newX, newY, newWidth, newHeight);
+            this.ctx.drawImage(
+                image,
+                0,
+                0,
+                container.intrinsicWidth,
+                container.intrinsicHeight,
+                box.left,
+                box.top,
+                box.width,
+                box.height
+            );
             this.ctx.restore();
         }
     }
