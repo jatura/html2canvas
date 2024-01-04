@@ -272,26 +272,25 @@ export class CanvasRenderer extends Renderer {
     ): void {
         if (image && container.intrinsicWidth > 0 && container.intrinsicHeight > 0) {
             const box = contentBox(container);
-            const path = calculatePaddingBoxPath(curves);
-            this.path(path);
-            this.ctx.save();
-            this.ctx.clip();
-            
-            let newWidth;
-            let newHeight;
-            let newX = box.left;
-            let newY = box.top;
+            var newWidth = 30;
+            var newHeight = 30;
+            var newX = box.left;
+            var newY = box.top;
 
             if (container.intrinsicWidth / box.width < container.intrinsicHeight / box.height) {
-                newWidth = box.width;
-                newHeight = container.intrinsicHeight * (box.width / container.intrinsicWidth);
-                newY = box.top + (box.height - newHeight) / 2;
-            } else {
+                    newWidth = box.width;
+                    newHeight = container.intrinsicHeight * (box.width / container.intrinsicWidth);
+                    newY = box.top + (box.height - newHeight) / 2;
+            }
+            else {
                 newWidth = container.intrinsicWidth * (box.height / container.intrinsicHeight);
                 newHeight = box.height;
                 newX = box.left + (box.width - newWidth) / 2;
             }
-
+            var path = calculatePaddingBoxPath(curves);
+            this.path(path);
+            this.ctx.save();
+            this.ctx.clip();
             this.ctx.drawImage(image, 0, 0, container.intrinsicWidth, container.intrinsicHeight, newX, newY, newWidth, newHeight);
             this.ctx.restore();
         }
