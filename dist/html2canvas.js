@@ -6809,22 +6809,20 @@
                 this.path(path);
                 this.ctx.save();
                 this.ctx.clip();
-                
-                let newWidth;
-                let newHeight;
-                let newX = box.left;
-                let newY = box.top;
-    
+                var newWidth = void 0;
+                var newHeight = void 0;
+                var newX = box.left;
+                var newY = box.top;
                 if (container.intrinsicWidth / box.width < container.intrinsicHeight / box.height) {
                     newWidth = box.width;
                     newHeight = container.intrinsicHeight * (box.width / container.intrinsicWidth);
                     newY = box.top + (box.height - newHeight) / 2;
-                } else {
+                }
+                else {
                     newWidth = container.intrinsicWidth * (box.height / container.intrinsicHeight);
                     newHeight = box.height;
                     newX = box.left + (box.width - newWidth) / 2;
                 }
-    
                 this.ctx.drawImage(image, 0, 0, container.intrinsicWidth, container.intrinsicHeight, newX, newY, newWidth, newHeight);
                 this.ctx.restore();
             }
