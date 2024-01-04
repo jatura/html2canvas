@@ -15,6 +15,8 @@ import { lineBreak } from './property-descriptors/line-break';
 import { listStyleImage } from './property-descriptors/list-style-image';
 import { listStylePosition } from './property-descriptors/list-style-position';
 import { listStyleType } from './property-descriptors/list-style-type';
+import { objectFit } from './property-descriptors/object-fit';
+import { objectPosition } from './property-descriptors/object-position';
 import { OVERFLOW } from './property-descriptors/overflow';
 import { overflowWrap } from './property-descriptors/overflow-wrap';
 import { textAlign } from './property-descriptors/text-align';
@@ -89,6 +91,8 @@ export declare class CSSParsedDeclaration {
     marginRight: CSSValue;
     marginBottom: CSSValue;
     marginLeft: CSSValue;
+    objectFit: ReturnType<typeof objectFit.parse>;
+    objectPosition: ReturnType<typeof objectPosition.parse>;
     opacity: ReturnType<typeof opacity.parse>;
     overflowX: OVERFLOW;
     overflowY: OVERFLOW;

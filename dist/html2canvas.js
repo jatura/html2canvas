@@ -2988,6 +2988,40 @@
     var marginBottom = marginForSide('bottom');
     var marginLeft = marginForSide('left');
 
+    var objectFit = {
+        name: 'object-fit',
+        initialValue: 'fill',
+        prefix: false,
+        type: 2 /* IDENT_VALUE */,
+        parse: function (_context, objectFit) {
+            switch (objectFit) {
+                case 'contain':
+                    return "contain" /* CONTAIN */;
+                case 'cover':
+                    return "cover" /* COVER */;
+                case 'none':
+                    return "none" /* NONE */;
+                case 'scale-down':
+                    return "scale-down" /* SCALE_DOWN */;
+                case 'fill':
+                default:
+                    return "fill" /* FILL */;
+            }
+        }
+    };
+
+    var objectPosition = {
+        name: 'object-position',
+        initialValue: '50% 50%',
+        type: 1 /* LIST */,
+        prefix: false,
+        parse: function (_context, tokens) {
+            return parseFunctionArgs(tokens)
+                .map(function (values) { return values.filter(isLengthPercentage); })
+                .map(parseLengthPercentageTuple)[0];
+        }
+    };
+
     var overflow = {
         name: 'overflow',
         initialValue: 'visible',
@@ -3660,6 +3694,8 @@
             this.marginRight = parse(context, marginRight, declaration.marginRight);
             this.marginBottom = parse(context, marginBottom, declaration.marginBottom);
             this.marginLeft = parse(context, marginLeft, declaration.marginLeft);
+            this.objectFit = parse(context, objectFit, declaration.objectFit);
+            this.objectPosition = parse(context, objectPosition, declaration.objectPosition);
             this.opacity = parse(context, opacity, declaration.opacity);
             var overflowTuple = parse(context, overflow, declaration.overflow);
             this.overflowX = overflowTuple[0];
@@ -6613,6 +6649,103 @@
         return Renderer;
     }());
 
+    var calculateObjectFitBounds = function (objectFit, objectPosition, naturalWidth, naturalHeight, clientWidth, clientHeight) {
+        var naturalRatio = naturalWidth / naturalHeight;
+        var clientRatio = clientWidth / clientHeight;
+        var objectPositionX = getAbsoluteValue(objectPosition[0], 1);
+        var objectPositionY = getAbsoluteValue(objectPosition[1] || objectPosition[0], 1);
+        var srcX, srcY, srcWidth, srcHeight, destX, destY, destWidth, destHeight;
+        if (objectFit === "scale-down" /* SCALE_DOWN */) {
+            objectFit =
+                naturalWidth < clientWidth && naturalHeight < clientHeight
+                    ? "none" /* NONE */
+                    : "contain" /* CONTAIN */; // at least one axis is greater or equal in size
+        }
+        switch (objectFit) {
+            case "contain" /* CONTAIN */:
+                srcX = 0;
+                srcY = 0;
+                srcWidth = naturalWidth;
+                srcHeight = naturalHeight;
+                if (naturalRatio < clientRatio) {
+                    // snap to top/bottom
+                    destY = 0;
+                    destHeight = clientHeight;
+                    destWidth = destHeight * naturalRatio;
+                    destX = (clientWidth - destWidth) * objectPositionX;
+                }
+                else {
+                    // snap to left/right
+                    destX = 0;
+                    destWidth = clientWidth;
+                    destHeight = destWidth / naturalRatio;
+                    destY = (clientHeight - destHeight) * objectPositionY;
+                }
+                break;
+            case "cover" /* COVER */:
+                destX = 0;
+                destY = 0;
+                destWidth = clientWidth;
+                destHeight = clientHeight;
+                if (naturalRatio < clientRatio) {
+                    // fill left/right
+                    srcX = 0;
+                    srcWidth = naturalWidth;
+                    srcHeight = clientHeight * (naturalWidth / clientWidth);
+                    srcY = (naturalHeight - srcHeight) * objectPositionY;
+                }
+                else {
+                    // fill top/bottom
+                    srcY = 0;
+                    srcHeight = naturalHeight;
+                    srcWidth = clientWidth * (naturalHeight / clientHeight);
+                    srcX = (naturalWidth - srcWidth) * objectPositionX;
+                }
+                break;
+            case "none" /* NONE */:
+                if (naturalWidth < clientWidth) {
+                    srcX = 0;
+                    srcWidth = naturalWidth;
+                    destX = (clientWidth - naturalWidth) * objectPositionX;
+                    destWidth = naturalWidth;
+                }
+                else {
+                    srcX = (naturalWidth - clientWidth) * objectPositionX;
+                    srcWidth = clientWidth;
+                    destX = 0;
+                    destWidth = clientWidth;
+                }
+                if (naturalHeight < clientHeight) {
+                    srcY = 0;
+                    srcHeight = naturalHeight;
+                    destY = (clientHeight - naturalHeight) * objectPositionY;
+                    destHeight = naturalHeight;
+                }
+                else {
+                    srcY = (naturalHeight - clientHeight) * objectPositionY;
+                    srcHeight = clientHeight;
+                    destY = 0;
+                    destHeight = clientHeight;
+                }
+                break;
+            case "fill" /* FILL */:
+            default:
+                srcX = 0;
+                srcY = 0;
+                srcWidth = naturalWidth;
+                srcHeight = naturalHeight;
+                destX = 0;
+                destY = 0;
+                destWidth = clientWidth;
+                destHeight = clientHeight;
+                break;
+        }
+        return {
+            src: new Bounds(srcX, srcY, srcWidth, srcHeight),
+            dest: new Bounds(destX, destY, destWidth, destHeight)
+        };
+    };
+
     var MASK_OFFSET = 10000;
     var CanvasRenderer = /** @class */ (function (_super) {
         __extends(CanvasRenderer, _super);
@@ -6805,25 +6938,12 @@
         CanvasRenderer.prototype.renderReplacedElement = function (container, curves, image) {
             if (image && container.intrinsicWidth > 0 && container.intrinsicHeight > 0) {
                 var box = contentBox(container);
-                var newWidth = 30;
-                var newHeight = 30;
-                var newX = box.left;
-                var newY = box.top;
-                if (container.intrinsicWidth / box.width < container.intrinsicHeight / box.height) {
-                    newWidth = box.width;
-                    newHeight = container.intrinsicHeight * (box.width / container.intrinsicWidth);
-                    newY = box.top + (box.height - newHeight) / 2;
-                }
-                else {
-                    newWidth = container.intrinsicWidth * (box.height / container.intrinsicHeight);
-                    newHeight = box.height;
-                    newX = box.left + (box.width - newWidth) / 2;
-                }
                 var path = calculatePaddingBoxPath(curves);
                 this.path(path);
+                var _a = calculateObjectFitBounds(container.styles.objectFit, container.styles.objectPosition, container.intrinsicWidth, container.intrinsicHeight, box.width, box.height), src = _a.src, dest = _a.dest;
                 this.ctx.save();
                 this.ctx.clip();
-                this.ctx.drawImage(image, 0, 0, container.intrinsicWidth, container.intrinsicHeight, newX, newY, newWidth, newHeight);
+                this.ctx.drawImage(image, src.left, src.top, src.width, src.height, box.left + dest.left, box.top + dest.top, dest.width, dest.height);
                 this.ctx.restore();
             }
         };

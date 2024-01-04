@@ -44,6 +44,7 @@ import {PAINT_ORDER_LAYER} from '../../css/property-descriptors/paint-order';
 import {Renderer} from '../renderer';
 import {Context} from '../../core/context';
 import {DIRECTION} from '../../css/property-descriptors/direction';
+import {calculateObjectFitBounds} from '../object-fit';
 
 export type RenderConfigurations = RenderOptions & {
     backgroundColor: Color | null;
@@ -272,26 +273,29 @@ export class CanvasRenderer extends Renderer {
     ): void {
         if (image && container.intrinsicWidth > 0 && container.intrinsicHeight > 0) {
             const box = contentBox(container);
-            var newWidth = 30;
-            var newHeight = 30;
-            var newX = box.left;
-            var newY = box.top;
-
-            if (container.intrinsicWidth / box.width < container.intrinsicHeight / box.height) {
-                    newWidth = box.width;
-                    newHeight = container.intrinsicHeight * (box.width / container.intrinsicWidth);
-                    newY = box.top + (box.height - newHeight) / 2;
-            }
-            else {
-                newWidth = container.intrinsicWidth * (box.height / container.intrinsicHeight);
-                newHeight = box.height;
-                newX = box.left + (box.width - newWidth) / 2;
-            }
-            var path = calculatePaddingBoxPath(curves);
+            const path = calculatePaddingBoxPath(curves);
             this.path(path);
+            const {src, dest} = calculateObjectFitBounds(
+                container.styles.objectFit,
+                container.styles.objectPosition,
+                container.intrinsicWidth,
+                container.intrinsicHeight,
+                box.width,
+                box.height
+            );
             this.ctx.save();
             this.ctx.clip();
-            this.ctx.drawImage(image, 0, 0, container.intrinsicWidth, container.intrinsicHeight, newX, newY, newWidth, newHeight);
+            this.ctx.drawImage(
+                image,
+                src.left,
+                src.top,
+                src.width,
+                src.height,
+                box.left + dest.left,
+                box.top + dest.top,
+                dest.width,
+                dest.height
+            );
             this.ctx.restore();
         }
     }

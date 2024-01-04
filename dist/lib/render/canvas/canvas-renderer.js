@@ -79,6 +79,7 @@ var textarea_element_container_1 = require("../../dom/elements/textarea-element-
 var select_element_container_1 = require("../../dom/elements/select-element-container");
 var iframe_element_container_1 = require("../../dom/replaced-elements/iframe-element-container");
 var renderer_1 = require("../renderer");
+var object_fit_1 = require("../object-fit");
 var MASK_OFFSET = 10000;
 var CanvasRenderer = /** @class */ (function (_super) {
     __extends(CanvasRenderer, _super);
@@ -271,25 +272,12 @@ var CanvasRenderer = /** @class */ (function (_super) {
     CanvasRenderer.prototype.renderReplacedElement = function (container, curves, image) {
         if (image && container.intrinsicWidth > 0 && container.intrinsicHeight > 0) {
             var box = box_sizing_1.contentBox(container);
-            var newWidth = 30;
-            var newHeight = 30;
-            var newX = box.left;
-            var newY = box.top;
-            if (container.intrinsicWidth / box.width < container.intrinsicHeight / box.height) {
-                newWidth = box.width;
-                newHeight = container.intrinsicHeight * (box.width / container.intrinsicWidth);
-                newY = box.top + (box.height - newHeight) / 2;
-            }
-            else {
-                newWidth = container.intrinsicWidth * (box.height / container.intrinsicHeight);
-                newHeight = box.height;
-                newX = box.left + (box.width - newWidth) / 2;
-            }
             var path = bound_curves_1.calculatePaddingBoxPath(curves);
             this.path(path);
+            var _a = object_fit_1.calculateObjectFitBounds(container.styles.objectFit, container.styles.objectPosition, container.intrinsicWidth, container.intrinsicHeight, box.width, box.height), src = _a.src, dest = _a.dest;
             this.ctx.save();
             this.ctx.clip();
-            this.ctx.drawImage(image, 0, 0, container.intrinsicWidth, container.intrinsicHeight, newX, newY, newWidth, newHeight);
+            this.ctx.drawImage(image, src.left, src.top, src.width, src.height, box.left + dest.left, box.top + dest.top, dest.width, dest.height);
             this.ctx.restore();
         }
     };
